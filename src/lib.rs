@@ -8,6 +8,9 @@ use pinocchio_pubkey::declare_id;
 use pinocchio_log::log;
 
 pub mod config;
+pub mod instructions;
+
 use config::*;
+use instructions::*;
 
 declare_id!("9uwR3ZyHXhnA2QvPDHtjg5ei3AT9VTzst6pbzj6eQjLn");

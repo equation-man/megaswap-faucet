@@ -2,7 +2,7 @@
 use solana_account_view::{Ref, RefMut};
 use solana_address;
 use pinocchio::{
-    AccountView, Address, ProgramResult,
+    AccountView, Address,
     error::ProgramError,
 };
 
@@ -148,7 +148,8 @@ impl Config {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        // Here we have RefMut<[u8]>
+        // Here we have solana_account_view::RefMut<[u8]>
+        // We will need to keep the borrow guard.
         let data = account_info.try_borrow_mut()?;
 
         // Alignment check.
@@ -224,7 +225,6 @@ impl Config {
 const _: () = {
     assert!(core::mem::size_of::<Config>() == Config::LEN);
 };
-
 // We have an alignment of 1. All values are u8
 const _: () = {
     assert!(core::mem::align_of::<Config>() == 1);
