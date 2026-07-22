@@ -51,7 +51,9 @@ impl<'a> TryFrom<&'a [u8]> for InitializeInstructionData {
         if data.len() != core::mem::size_of::<InitializeInstructionData>() {
             return Err(ProgramError::InvalidInstructionData);
         }
-        let dispense_limit = u64::from_le_bytes(data[0..8].try_into().unwrap());
+        let dispense_limit = u64::from_le_bytes(
+            data[0..8].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
+        );
         let protocol_version = data[8];
 
         Ok(Self {dispense_limit, protocol_version})
