@@ -79,7 +79,7 @@ impl<'a> Initialize<'a> {
         // Derive and create the config PDA.
         // Create mints for token x and y from PDA.
         // Use mint + owner(PDA) to create ATA that holds the tokens.
-        // Mint supply of the tokens to the PDA.
+        // Mint supply of the tokens to the ATA.
         log!("Initializing the megaswap-faucet protocol");
         Ok(())
     }
