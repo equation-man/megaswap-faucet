@@ -7,7 +7,6 @@ use pinocchio::{
     cpi::{Signer, Seed},
 };
 use pinocchio_log::log;
-use pinocchio_associated_token_account;
 use pinocchio_associated_token_account::{
     instructions::{Create, CreateIdempotent},
 };
@@ -77,6 +76,10 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountView])> for Initialize<'a> {
 impl<'a> Initialize<'a> {
     pub const DISCRIMINATOR: &'a u8 = &0;
     pub fn process(&mut self) -> ProgramResult {
+        // Derive and create the config PDA.
+        // Create mints for token x and y from PDA.
+        // Use mint + owner(PDA) to create ATA that holds the tokens.
+        // Mint supply of the tokens to the PDA.
         log!("Initializing the megaswap-faucet protocol");
         Ok(())
     }
