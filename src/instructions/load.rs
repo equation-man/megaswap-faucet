@@ -4,6 +4,7 @@ use pinocchio::{
     AccountView, Address, ProgramResult,
     error::ProgramError,
 };
+use pinocchio_log::log;
 
 use crate::config::Config;
 use crate::instructions::*;
@@ -43,5 +44,29 @@ impl<'a> TryFrom<&'a [u8]> for LoadIxData {
         );
 
         Ok(Self { amount_to_mint })
+    }
+}
+
+pub struct LoadTokens<'a> {
+    pub accounts: LoadingAccounts<'a>,
+    pub instruction_data: LoadIxData,
+}
+
+impl<'a> TryFrom<(&'a [u8], &'a [AccountView])> for LoadTokens<'a> {
+    type Error = ProgramError;
+    fn try_from((data, ix_accounts): (&'a [u8], &'a [AccountView])) -> Result<Self, Self::Error> {
+        let accounts = LoadingAccounts::try_from(ix_accounts)?;
+        let instruction_data = LoadIxData::try_from(data)?;
+
+        Ok(Self { accounts, instruction_data })
+    }
+}
+
+impl<'a> LoadTokens<'a> {
+    pub const DISCRIMINATOR: &'a u8 = &1;
+    pub fn process(&mut self) -> ProgramResult {
+        // Mint tokens into the faucet
+        log!("Loading tokens into faucet");
+        Ok(())
     }
 }
