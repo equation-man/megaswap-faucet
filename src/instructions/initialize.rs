@@ -21,9 +21,9 @@ pub struct InitializeAccounts<'a> {
     pub system_program: &'a AccountView,
 }
 
-impl<'a> TryFrom<&'a [AccountView]> for InitializeAccounts<'a> {
+impl<'a> TryFrom<&'a mut [AccountView]> for InitializeAccounts<'a> {
     type Error = ProgramError;
-    fn try_from(accounts: &'a [AccountView]) -> Result<Self, Self::Error> {
+    fn try_from(accounts: &'a mut [AccountView]) -> Result<Self, Self::Error> {
         let [
             initializer, token_program,
             ata_token_program, system_program
@@ -65,9 +65,9 @@ pub struct Initialize<'a> {
     pub instruction_data: InitializeInstructionData,
 }
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountView])> for Initialize<'a> {
+impl<'a> TryFrom<(&'a [u8], &'a mut [AccountView])> for Initialize<'a> {
     type Error = ProgramError;
-    fn try_from((data, ix_accounts): (&'a [u8], &'a [AccountView])) -> Result<Self, Self::Error> {
+    fn try_from((data, ix_accounts): (&'a [u8], &'a mut [AccountView])) -> Result<Self, Self::Error> {
         let accounts = InitializeAccounts::try_from(ix_accounts)?;
         let instruction_data = InitializeInstructionData::try_from(data)?;
 
