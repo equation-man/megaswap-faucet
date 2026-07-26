@@ -1,0 +1,10 @@
+/home/odin/Desktop/software_engineering_laboratory/hangouts/web3_workshop/pinocchio_projects/megaswap-faucet/program/target/sbpf-solana-solana/release/deps/solana_address-8b899ae539b5f687.d: /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/lib.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/derive.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/error.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/syscalls.rs
+
+/home/odin/Desktop/software_engineering_laboratory/hangouts/web3_workshop/pinocchio_projects/megaswap-faucet/program/target/sbpf-solana-solana/release/deps/libsolana_address-8b899ae539b5f687.rlib: /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/lib.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/derive.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/error.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/syscalls.rs
+
+/home/odin/Desktop/software_engineering_laboratory/hangouts/web3_workshop/pinocchio_projects/megaswap-faucet/program/target/sbpf-solana-solana/release/deps/libsolana_address-8b899ae539b5f687.rmeta: /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/lib.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/derive.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/error.rs /home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/syscalls.rs
+
+/home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/lib.rs:
+/home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/derive.rs:
+/home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/error.rs:
+/home/odin/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/solana-address-2.7.0/src/syscalls.rs:
