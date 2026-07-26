@@ -1,2 +1,5 @@
-/target
-megaswap-keypair.json
+# Ignore all target directories.
+**/target/
+target/
+# Ignore sensitive keypairs anywhere
+**/*-keypair.json
