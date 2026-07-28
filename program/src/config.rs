@@ -5,6 +5,7 @@ use pinocchio::{
     AccountView, Address,
     error::ProgramError,
 };
+use crate::instructions::helpers::AccountData;
 
 #[repr(C)]
 pub struct Config {
@@ -16,8 +17,13 @@ pub struct Config {
     pub version: u8, // Protocol version.
 }
 
+impl AccountData for Config {
+    const LEN: usize = core::mem::size_of::<Self>();
+}
+
 impl Config {
     pub const LEN: usize = core::mem::size_of::<Self>();
+    // Alignment is 1, hence no need to perform alignment check.
     pub const ALIGN: usize = core::mem::align_of::<Self>();
 
     // ============== READING DATA ======================
@@ -41,11 +47,6 @@ impl Config {
         // we'll enforce Ref::map() since the borrowed data will need to
         // escape the function.
         let data = account_info.try_borrow()?;
-
-        // Alignment checks.
-        if (data.as_ptr() as usize) % Self::ALIGN != 0 {
-            return Err(ProgramError::InvalidAccountData);
-        }
 
         // Ref::map() here helps the projected reference to escape the function
         // while the guard is still alive.
@@ -79,11 +80,6 @@ impl Config {
         // `# Safety` contract
         let data = unsafe { account_info.borrow_unchecked() };
 
-        // Alignment check
-        if (data.as_ptr() as usize) % Self::ALIGN != 0 {
-            return Err(ProgramError::InvalidAccountData);
-        }
-
         Ok(unsafe {
             // SAFETY: length, owner, alignment already checked above; aliasing guaranteed
             // by caller
@@ -97,10 +93,7 @@ impl Config {
             return Err(ProgramError::InvalidAccountData);
         }
         let ptr = bytes.as_ptr();
-        // Checking alignment
-        if (ptr as usize) % Self::ALIGN != 0 {
-            return Err(ProgramError::InvalidAccountData);
-        }
+
         Ok(unsafe { Self::from_bytes_unchecked(bytes) })
     }
 

@@ -157,7 +157,6 @@ dependencies = [
  "pinocchio-token-2022",
  "solana-account-view",
  "solana-address",
- "solana-signer",
 ]
 
 [[package]]
@@ -369,7 +368,6 @@ dependencies = [
  "sha2-const-stable",
  "solana-define-syscall 5.1.0",
  "solana-program-error",
- "solana-sanitize",
  "solana-sha256-hasher",
 ]
 
@@ -392,15 +390,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0df9b01495ed31100aca97a7f5862d5e19ab1636d60d1a9f02391408dd9dec84"
 
 [[package]]
-name = "solana-instruction-error"
-version = "2.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e8e7db78c122d02189619490b1fef04a2a042c389662920617c0e6381fdf8fdd"
-dependencies = [
- "solana-program-error",
-]
-
-[[package]]
 name = "solana-instruction-view"
 version = "2.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -419,21 +408,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4f04fa578707b3612b095f0c8e19b66a1233f7c42ca8082fcb3b745afcc0add6"
 
 [[package]]
-name = "solana-pubkey"
-version = "4.2.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7db719574990de7e8b0f55a8593ac92a5ccb42c8ce67b3e4bf05b139d5d9ee71"
-dependencies = [
- "solana-address",
-]
-
-[[package]]
-name = "solana-sanitize"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf09694a0fc14e5ffb18f9b7b7c0f15ecb6eac5b5610bf76a1853459d19daf9"
-
-[[package]]
 name = "solana-sha256-hasher"
 version = "3.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -442,37 +416,6 @@ dependencies = [
  "sha2",
  "solana-define-syscall 4.0.1",
  "solana-hash",
-]
-
-[[package]]
-name = "solana-signature"
-version = "3.4.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b0364c7577c3c82a693ce28a1febc8d1b5d1b0a175fdc2114ae6186b69effe1e"
-dependencies = [
- "five8",
- "solana-sanitize",
-]
-
-[[package]]
-name = "solana-signer"
-version = "3.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "520bd6021163ee517f4bdc7ae03ded904f97e11320001ba0b3355f45eb14f558"
-dependencies = [
- "solana-pubkey",
- "solana-signature",
- "solana-transaction-error",
-]
-
-[[package]]
-name = "solana-transaction-error"
-version = "3.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8a37cf28c58b03878d38c38411f0414d3a99a9e3b7e5ebb0f83f3317b2796d18"
-dependencies = [
- "solana-instruction-error",
- "solana-sanitize",
 ]
 
 [[package]]

@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-pinocchio = "0.11.2"
+pinocchio = { version = "0.11.2", features = ["account-resize"] }
 pinocchio-associated-token-account = "0.4.0"
 pinocchio-log = "0.5.1"
 pinocchio-pubkey = "0.3.0"

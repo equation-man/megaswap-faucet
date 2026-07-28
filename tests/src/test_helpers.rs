@@ -25,9 +25,8 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     path.push("target");
     path.push("deploy");
     path.push("megaswap_faucet.so");
-    println!("The path is {}", path.display());
-    //let bytes = include_bytes!("");
     let bytes = fs::read(&path).expect(&format!("Couldn't read {:?}", path));
+    
     let  mut svm = LiteSVM::new();
     svm.add_program(program_id, &bytes);
 

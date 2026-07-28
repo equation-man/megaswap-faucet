@@ -22,8 +22,8 @@ pub fn system_account_check(account: &AccountView) -> Result<(), ProgramError> {
     Ok(())
 }
 
-pub struct Mint;
-impl Mint {
+pub struct MintAccount;
+impl MintAccount {
     fn check(account: &AccountView) -> Result<(), ProgramError> {
         if !account.owned_by(&pinocchio_token::ID) {
             return Err(ProgramError::IncorrectProgramId);
@@ -70,9 +70,9 @@ impl Mint {
 }
 
 
-pub struct Token;
-impl Token {
-    fn check(account: &AccountView) -> Result<(), ProgramError> {
+pub struct TokenAccount;
+impl TokenAccount {
+    pub fn check(account: &AccountView) -> Result<(), ProgramError> {
         if !account.owned_by(&pinocchio_token::ID) {
             return Err(ProgramError::IncorrectProgramId);
         }
@@ -82,7 +82,7 @@ impl Token {
         Ok(())
     }
 
-    fn init(
+    pub fn init(
         account: &AccountView, mint: &AccountView,
         payer: &AccountView, owner: &Address
     ) -> ProgramResult {
@@ -105,7 +105,7 @@ impl Token {
         }.invoke()
     }
 
-    fn init_if_needed(
+    pub fn init_if_needed(
         account: &AccountView, mint: &AccountView,
         payer: &AccountView, owner: &Address
     ) -> ProgramResult {
