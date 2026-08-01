@@ -11,7 +11,9 @@ use crate::instructions::helpers::AccountData;
 pub struct Config {
     pub limit: [u8; 8], // Token limit to dispense.
     pub mint_x: Address, // Mint address for token x.
+    pub x_decimal: u8, // Token x decimals.
     pub mint_y: Address, // Mint address for token y.
+    pub y_decimal: u8, // Token y decimals.
     pub vault_x_ata: Address, // ATA for token x pool.
     pub vault_y_ata: Address, // ATA for token y pool.
     pub version: u8, // Protocol version.
@@ -115,7 +117,11 @@ impl Config {
     #[inline(always)]
     pub fn mint_x(&self) -> &Address { &self.mint_x }
     #[inline(always)]
+    pub fn x_decimal(&self) -> u8 { self.x_decimal }
+    #[inline(always)]
     pub fn mint_y(&self) -> &Address { &self.mint_y }
+    #[inline(always)]
+    pub fn y_decimal(&self) -> u8 { self.y_decimal }
     #[inline(always)]
     pub fn vault_x_ata(&self) -> &Address { &self.vault_x_ata }
     #[inline(always)]
@@ -176,8 +182,20 @@ impl Config {
     }
 
     #[inline(always)]
+    pub fn set_x_decimals(&mut self, x_decimals: u8) -> Result<(), ProgramError> {
+        self.x_decimal = x_decimals as u8;
+        Ok(())
+    }
+
+    #[inline(always)]
     pub fn set_mint_y(&mut self, mint_y: [u8; 32]) -> Result<(), ProgramError> {
         self.mint_y = mint_y.into();
+        Ok(())
+    }
+
+    #[inline(always)]
+    pub fn set_y_decimals(&mut self, y_decimals: u8) -> Result<(), ProgramError> {
+        self.y_decimal = y_decimals as u8;
         Ok(())
     }
 
@@ -199,13 +217,16 @@ impl Config {
     #[inline(always)]
     pub fn set_inner(
         &mut self,
-        limit: u64, mint_x: [u8; 32], mint_y: [u8; 32],
+        limit: u64, mint_x: [u8; 32], x_decimals: u8,
+        mint_y: [u8; 32], y_decimals: u8,
         vault_x_ata: [u8; 32], vault_y_ata: [u8; 32],
         version: u8
     ) -> Result<(), ProgramError> {
         self.set_limit(limit);
         self.set_mint_x(mint_x);
+        self.set_x_decimals(x_decimals);
         self.set_mint_y(mint_y);
+        self.set_y_decimals(y_decimals);
         self.set_vault_x_ata(vault_x_ata);
         self.set_vault_y_ata(vault_y_ata);
         self.set_version(version);

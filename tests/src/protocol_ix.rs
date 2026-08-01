@@ -12,17 +12,18 @@ use solana_program::sysvar::instructions::ID as SYSVARS_ID;
 use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use spl_associated_token_account::ID as ASSOCIATED_TOKEN_PROGRAM_ID;
 use spl_associated_token_account::{
-    get_associated_token_address
+    get_associated_token_address,
 };
 
 use crate::helpers::{
-    get_token_balance,
+    get_token_balance, get_config_data,
 };
 
 pub struct MegaSwapFaucetCtx {
     pub svm: LiteSVM,
     // Protocol's authority
     pub initializer: Keypair,
+    pub protocol_version: u8,
 }
 
 pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
@@ -41,12 +42,18 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     svm.airdrop(&initializer.pubkey(), 5_000_000_000).unwrap();
 
     // Data for instruction.
-    let dispense_limit = 1000_000u64;
+    let protocol_seed_amount = 500_000_000_000u64;
+    let dispense_limit = 1_000_000u64;
     let mint_decimals = 6u8;
+    let x_decimals = 6u8;
+    let y_decimals = 6u8;
     let protocol_version = 1u8;
     let mut ix_data = vec![0u8];
     ix_data.extend_from_slice(&dispense_limit.to_le_bytes());
+    ix_data.extend_from_slice(&protocol_seed_amount.to_le_bytes());
     ix_data.push(mint_decimals);
+    ix_data.push(x_decimals);
+    ix_data.push(y_decimals);
     ix_data.push(protocol_version);
 
     // ----- PDAs -----
@@ -82,14 +89,52 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     );
 
     let tx_init = svm.send_transaction(tx);
-    //println!("Test initializeng the protocol {:#?}", tx_init);
-    let vault_x_bal = get_token_balance(&svm, &vault_y_ata);
-    assert_eq!(vault_x_bal, dispense_limit);
+    //println!("Test initialize transaction: {:#?}", tx_init);
+    let vault_x_bal = get_token_balance(&svm, &vault_x_ata);
     let vault_y_bal = get_token_balance(&svm, &vault_y_ata);
-    assert_eq!(vault_y_bal, dispense_limit);
-    assert_eq!(vault_x_bal, vault_y_bal);
+    // Getting config data.
+    let config_disp_bal = get_config_data(&svm, &config_pda);
+
+    assert_eq!(vault_x_bal, protocol_seed_amount, "Vault x wallet: Expected {}, but got instead: {}", protocol_seed_amount, vault_x_bal);
+    assert_eq!(vault_y_bal, protocol_seed_amount, "Vault y wallet: Expected {}, but got instead: {}", protocol_seed_amount, vault_y_bal);
+    // Confirms the vaults are seeded appropriately with funds
+    assert_eq!(vault_x_bal, vault_y_bal, "Expected: Vault x {} == Vault y {}", vault_x_bal, vault_y_bal);
+    // Confirmed the PDA is appropriately initialized
+    assert_eq!(config_disp_bal, dispense_limit, "Expected dispense limit {}, got {}", dispense_limit, config_disp_bal);
 
     MegaSwapFaucetCtx {
-        svm, initializer
+        svm, initializer, protocol_version
     }
+}
+
+pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
+    // Dispense date.
+    let dispense_amount = 1_000_000u64;
+    let mut ix_data = vec![1u8];
+    ix_data.extend_from_slice(&dispense_amount.to_le_bytes());
+    // accounts; config, destination_wallet
+    let trader_wallet = Keypair::new();
+    ctx.svm.airdrop(&trader_wallet.pubkey(), 5_000_000_000).unwrap();
+    let (config_pda, config_bump) = Pubkey::find_program_address(
+        &[b"config", &ctx.protocol_version.to_le_bytes()],
+        &program_id
+    );
+
+    let accounts = vec![
+        AccountMeta::new(trader_wallet.pubkey(), true),
+        AccountMeta::new(config_pda, false),
+    ];
+
+    let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);
+    let tx = Transaction::new(
+        &[&trader_wallet],
+        Message::new(&[ix], Some(&trader_wallet.pubkey())),
+        ctx.svm.latest_blockhash()
+    );
+
+    let tx_disp = ctx.svm.send_transaction(tx);
+    println!("Testing dispense transaction: {:#?}", tx_disp);
+
+    //let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_wallet.pubkey());
+    //println!("The trader's wallet balance is {}", trader_wallet_bal);
 }

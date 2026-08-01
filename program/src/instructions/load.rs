@@ -63,7 +63,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountView])> for LoadTokens<'a> {
 }
 
 impl<'a> LoadTokens<'a> {
-    pub const DISCRIMINATOR: &'a u8 = &1;
+    pub const DISCRIMINATOR: &'a u8 = &2;
     pub fn process(&mut self) -> ProgramResult {
         // Mint tokens into the faucet
         log!("Loading tokens into faucet");

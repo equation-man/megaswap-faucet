@@ -55,3 +55,13 @@ pub fn get_token_balance(svm: &LiteSVM, token_account_pubkey: &Pubkey) -> u64 {
 
     u64::from_le_bytes(balance_bytes)
 }
+
+pub fn get_config_data(svm: &LiteSVM, config_account_pubkey: &Pubkey) -> u64 {
+    let account = svm.get_account(config_account_pubkey)
+        .expect("Account Not Found");
+    let limit_bytes: [u8; 8] = account.data[0..8]
+        .try_into()
+        .expect("Failed to read dispense limit bytes from PDA");
+
+    u64::from_le_bytes(limit_bytes)
+}

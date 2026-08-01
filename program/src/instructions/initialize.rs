@@ -19,7 +19,7 @@ use crate::instructions::{
 pub struct InitializeAccounts<'a> {
     // Program's authority
     pub initializer: &'a AccountView,
-    pub config: &'a AccountView,
+    pub config: &'a mut AccountView,
     pub mint_x: &'a AccountView,
     pub mint_y: &'a AccountView,
     pub vault_x_ata: &'a AccountView,
@@ -52,7 +52,10 @@ impl<'a> TryFrom<&'a mut [AccountView]> for InitializeAccounts<'a> {
 #[repr(C, packed)]
 pub struct InitializeInstructionData {
     pub dispense_limit: u64,
+    pub seed_amount: u64,
     pub mint_decimals: u8,
+    pub x_decimals: u8,
+    pub y_decimals: u8,
     pub protocol_version: u8,
 }
 
@@ -65,10 +68,19 @@ impl<'a> TryFrom<&'a [u8]> for InitializeInstructionData {
         let dispense_limit = u64::from_le_bytes(
             data[0..8].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
         );
-        let mint_decimals = data[8];
-        let protocol_version = data[9];
+        let seed_amount = u64::from_le_bytes(
+            data[8..16].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
+        );
+        let mint_decimals = data[16];
+        let x_decimals = data[17];
+        let y_decimals = data[18];
+        let protocol_version = data[19];
 
-        Ok(Self {dispense_limit, mint_decimals, protocol_version})
+        Ok(Self {
+            dispense_limit, seed_amount,
+            mint_decimals, x_decimals,
+            y_decimals, protocol_version,
+        })
     }
 }
 
@@ -124,7 +136,7 @@ impl<'a> Initialize<'a> {
         MintAccount::init(
             self.accounts.mint_x,
             self.accounts.initializer,
-            self.instruction_data.mint_decimals,
+            self.instruction_data.x_decimals,
             &protocol_config_pda,
             &mint_x_signer,
             None // Tokens are not freezable
@@ -142,7 +154,7 @@ impl<'a> Initialize<'a> {
         MintAccount::init(
             self.accounts.mint_y,
             self.accounts.initializer,
-            self.instruction_data.mint_decimals,
+            self.instruction_data.y_decimals,
             &protocol_config_pda,
             &mint_y_signer,
             None, // Tokens are not freezable.
@@ -172,15 +184,28 @@ impl<'a> Initialize<'a> {
             self.accounts.mint_x,
             self.accounts.vault_x_ata,
             self.accounts.config, // Owner or mint authority is config PDA
-            self.instruction_data.dispense_limit,
+            self.instruction_data.seed_amount,
             &signer_seeds, // This is the owner pda signer seeds
         )?;
         TokenAccount::mint_tokens(
             self.accounts.mint_y,
             self.accounts.vault_y_ata,
             self.accounts.config, // Owner or mint authority is config PDA
-            self.instruction_data.dispense_limit,
+            self.instruction_data.seed_amount,
             &signer_seeds, // This is the owner pda signer seeds
+        )?;
+
+        // Saving adding configuration to config PDA.
+        let mut config = Config::load_mut(self.accounts.config)?;
+        config.set_inner(
+            self.instruction_data.dispense_limit,
+            expected_mint_x.to_bytes(),
+            self.instruction_data.x_decimals,
+            expected_mint_y.to_bytes(),
+            self.instruction_data.y_decimals,
+            self.accounts.vault_x_ata.address().to_bytes(),
+            self.accounts.vault_y_ata.address().to_bytes(),
+            self.instruction_data.protocol_version,
         )?;
         Ok(())
     }

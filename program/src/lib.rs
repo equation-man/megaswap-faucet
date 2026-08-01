@@ -13,6 +13,7 @@ pub mod instructions;
 use config::*;
 use crate::instructions::{
     initialize::*,
+    dispense::*,
 };
 
 declare_id!("9uwR3ZyHXhnA2QvPDHtjg5ei3AT9VTzst6pbzj6eQjLn");
@@ -38,6 +39,7 @@ fn process_instructions(
 ) -> ProgramResult {
     match instruction_data.split_first() {
         Some((Initialize::DISCRIMINATOR, data)) => Initialize::try_from((data, accounts))?.process(),
+        Some((Dispense::DISCRIMINATOR, data)) => Dispense::try_from((data, accounts))?.process(),
         _ => Err(ProgramError::InvalidInstructionData),
     }
 }
