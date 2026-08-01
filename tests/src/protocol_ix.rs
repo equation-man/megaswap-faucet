@@ -15,7 +15,9 @@ use spl_associated_token_account::{
     get_associated_token_address
 };
 
-use crate::helpers::{create_test_mint};
+use crate::helpers::{
+    get_token_balance,
+};
 
 pub struct MegaSwapFaucetCtx {
     pub svm: LiteSVM,
@@ -39,7 +41,7 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     svm.airdrop(&initializer.pubkey(), 5_000_000_000).unwrap();
 
     // Data for instruction.
-    let dispense_limit = 100_000u64;
+    let dispense_limit = 1000_000u64;
     let mint_decimals = 6u8;
     let protocol_version = 1u8;
     let mut ix_data = vec![0u8];
@@ -52,8 +54,6 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
         &[b"config", &protocol_version.to_le_bytes()], &program_id,
     );
 
-    //let mint_x = create_test_mint(&mut svm, &initializer, &initializer.pubkey(), 6);
-    //let mint_y = create_test_mint(&mut svm, &initializer, &initializer.pubkey(), 6);
     let (mint_x, mint_x_bump) = Pubkey::find_program_address(
         &[b"mint_x", &config_pda.as_ref()], &program_id
     );
@@ -82,7 +82,12 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     );
 
     let tx_init = svm.send_transaction(tx);
-    println!("Test initializeng the protocol {:#?}", tx_init);
+    //println!("Test initializeng the protocol {:#?}", tx_init);
+    let vault_x_bal = get_token_balance(&svm, &vault_y_ata);
+    assert_eq!(vault_x_bal, dispense_limit);
+    let vault_y_bal = get_token_balance(&svm, &vault_y_ata);
+    assert_eq!(vault_y_bal, dispense_limit);
+    assert_eq!(vault_x_bal, vault_y_bal);
 
     MegaSwapFaucetCtx {
         svm, initializer

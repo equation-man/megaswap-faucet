@@ -8,6 +8,7 @@ use solana_program::sysvar::rent;
 use solana_instruction;
 use spl_token::instruction as token_ix;
 use spl_token::state::Mint;
+use spl_token::state::Account as TokenAccount;
 use solana_program::program_pack::Pack;
 use solana_system_interface::instruction::create_account;
 
@@ -44,4 +45,13 @@ pub fn create_test_mint(
     svm.send_transaction(tx).unwrap();
 
     mint.pubkey()
+}
+
+pub fn get_token_balance(svm: &LiteSVM, token_account_pubkey: &Pubkey) -> u64 {
+    let acc_data = svm.get_account(token_account_pubkey)
+        .expect("Account not found");
+    let balance_bytes: [u8; 8] = acc_data.data[64..72].try_into()
+        .expect("Failed to read amount bytes from account layout");
+
+    u64::from_le_bytes(balance_bytes)
 }
