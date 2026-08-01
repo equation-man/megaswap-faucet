@@ -98,7 +98,6 @@ impl<'a> Initialize<'a> {
             &crate::ID.into()
         );
         let config_bump = [config_pda_bump];
-        log!("PDA address derived");
         let binding = [
             Seed::from(b"config"),
             Seed::from(&version_seed),
@@ -169,7 +168,20 @@ impl<'a> Initialize<'a> {
             &self.accounts.ata_token_program,
         )?;
         // Mint supply of the tokens to the ATAs.
-        log!("Initializing the megaswap-faucet protocol");
+        TokenAccount::mint_tokens(
+            self.accounts.mint_x,
+            self.accounts.vault_x_ata,
+            self.accounts.config, // Owner or mint authority is config PDA
+            self.instruction_data.dispense_limit,
+            &signer_seeds, // This is the owner pda signer seeds
+        )?;
+        TokenAccount::mint_tokens(
+            self.accounts.mint_y,
+            self.accounts.vault_y_ata,
+            self.accounts.config, // Owner or mint authority is config PDA
+            self.instruction_data.dispense_limit,
+            &signer_seeds, // This is the owner pda signer seeds
+        )?;
         Ok(())
     }
 }
