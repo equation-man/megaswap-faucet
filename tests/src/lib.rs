@@ -1,7 +1,8 @@
 //! MegaSwap faucet test entrypoint
 #![allow(warnings)]
-mod test_helpers;
-use crate::test_helpers::{
+mod protocol_ix;
+mod helpers;
+use crate::protocol_ix::{
     MegaSwapFaucetCtx, initialize_protocol,
 };
 use solana_pubkey::Pubkey;
