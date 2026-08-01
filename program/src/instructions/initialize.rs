@@ -111,7 +111,8 @@ impl<'a> Initialize<'a> {
             &signer_seeds,
         )?;
         // Create mints for token x and y from PDA.
-        let (expected_mint_x, mint_x_bump) = Address::find_program_address( &[b"mint_x", protocol_config_pda.as_ref()], &crate::ID.into()
+        let (expected_mint_x, mint_x_bump) = Address::find_program_address(
+            &[b"mint_x", protocol_config_pda.as_ref()], &crate::ID.into()
         );
         let mint_x_bump_binding = [mint_x_bump];
         let mint_config_binding = protocol_config_pda.as_ref();
@@ -129,8 +130,6 @@ impl<'a> Initialize<'a> {
             &mint_x_signer,
             None // Tokens are not freezable
         )?;
-
-        log!("Creating mint y");
         let (expected_mint_y, mint_y_bump) = Address::find_program_address(
             &[b"mint_y", protocol_config_pda.as_ref()], &crate::ID.into()
         );
@@ -150,7 +149,26 @@ impl<'a> Initialize<'a> {
             None, // Tokens are not freezable.
         )?;
         // Use mint + owner(PDA) to create ATA that holds the tokens.
-        // Mint supply of the tokens to the ATA.
+        // ATA for token x
+        AssociatedTokenAccount::init(
+            &self.accounts.vault_x_ata,
+            &self.accounts.mint_x,
+            &self.accounts.initializer,
+            &self.accounts.config, // Owned by the config PDA
+            &self.accounts.system_program,
+            &self.accounts.token_program,
+            &self.accounts.ata_token_program,
+        )?;
+        AssociatedTokenAccount::init(
+            &self.accounts.vault_y_ata,
+            &self.accounts.mint_y,
+            &self.accounts.initializer,
+            &self.accounts.config, // Owned by the config PDA
+            &self.accounts.system_program,
+            &self.accounts.token_program,
+            &self.accounts.ata_token_program,
+        )?;
+        // Mint supply of the tokens to the ATAs.
         log!("Initializing the megaswap-faucet protocol");
         Ok(())
     }

@@ -19,8 +19,8 @@ pub trait AccountData {
     const LEN: usize;
 }
 
-pub struct AssociatedToken;
-impl AssociatedToken {
+pub struct AssociatedTokenAccount;
+impl AssociatedTokenAccount {
     pub fn check(
         account: &AccountView, authority: &AccountView,
         mint: &AccountView, token_program: &AccountView

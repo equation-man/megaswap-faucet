@@ -6,7 +6,8 @@ use pinocchio::{
 };
 use pinocchio_system::instructions::CreateAccount;
 use pinocchio_token::instructions::{
-    InitializeMint2, InitializeAccount3
+    InitializeMint2, InitializeAccount3,
+    MintTo, TransferChecked, Burn,
 };
 
 pub fn signer_check(account: &AccountView) -> Result<(), ProgramError> {
@@ -115,6 +116,60 @@ impl TokenAccount {
         match Self::check(account) {
             Ok(_) => Ok(()),
             Err(_) => Ok(Self::init(account, mint, payer, owner)?),
+        }
+    }
+
+    pub fn mint_tokens(
+        mint: &AccountView, account: &AccountView,
+        authority: &AccountView, amount: u64,
+        mint_signer: &[Signer]
+    ) -> ProgramResult {
+        MintTo::<&AccountView> {
+            mint,
+            account,
+            mint_authority: authority,
+            multisig_signers: &[],
+            amount
+        }.invoke_signed(&mint_signer)
+    }
+
+    pub fn burn_tokens(
+        mint: &AccountView,
+        from: &AccountView,
+        authority: &AccountView,
+        amount: u64,
+        signer_seeds: Option<&[Signer]>,
+    ) -> ProgramResult {
+        let burn_ix = Burn::<&AccountView> {
+            mint,
+            account: from,
+            authority,
+            multisig_signers: &[],
+            amount,
+        };
+        match signer_seeds {
+            Some(seeds) => burn_ix.invoke_signed(&seeds),
+            None => burn_ix.invoke(),
+        }
+    }
+
+    pub fn transfer_tokens(
+        from: &AccountView,
+        to: &AccountView,
+        mint: &AccountView,
+        authority: &AccountView,
+        amount: u64,
+        decimals: u8,
+        signer_seeds: Option<&[Signer]>,
+    ) -> ProgramResult {
+        let transfer_ix = TransferChecked::<&AccountView> {
+            from, mint, to, authority,
+            multisig_signers: &[],
+            amount, decimals,
+        };
+        match signer_seeds {
+            Some(seeds) => transfer_ix.invoke_signed(&seeds),
+            None => transfer_ix.invoke(),
         }
     }
 }
