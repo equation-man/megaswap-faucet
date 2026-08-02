@@ -121,16 +121,16 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     );
 
     // Getting config data to extract utility addresses.
-    let protocol_config = get_config_data(&svm, &config_pda);
+    let protocol_config = get_config_data(&ctx.svm, &config_pda);
 
     let accounts = vec![
         AccountMeta::new(trader_wallet.pubkey(), true),
         AccountMeta::new(config_pda, false),
         AccountMeta::new(protocol_config.mint_x, false),
         AccountMeta::new(protocol_config.mint_y, false),
-        AccountMeta::new(protocol_condig.vault_x_ata, false),
+        AccountMeta::new(protocol_config.vault_x_ata, false),
         AccountMeta::new(protocol_config.vault_y_ata, false),
-        AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false);
+        AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
     ];
 
     let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);
