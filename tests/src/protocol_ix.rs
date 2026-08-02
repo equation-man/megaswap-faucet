@@ -162,6 +162,6 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     let tx_disp = ctx.svm.send_transaction(tx);
     //println!("Testing dispense transaction: {:#?}", tx_disp);
 
-    let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_wallet.pubkey());
+    let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_x_ata);
     println!("The trader's wallet balance is {}", trader_wallet_bal);
 }
