@@ -14,6 +14,8 @@ use crate::instructions::{
 pub struct DispenseAccounts<'a> {
     // Program's authority.
     pub destination_wallet: &'a AccountView,
+    pub destination_x_ata: &'a AccountView,
+    pub destination_y_ata: &'a AccountView,
     pub config: &'a AccountView,
     pub mint_x: &'a AccountView,
     pub mint_y: &'a AccountView,
@@ -26,8 +28,9 @@ impl<'a> TryFrom<&'a mut [AccountView]> for DispenseAccounts<'a> {
     type Error = ProgramError;
     fn try_from(accounts: &'a mut [AccountView]) -> Result<Self, Self::Error> {
         let [
-            destination_wallet, config, mint_x, mint_y,
-            vault_x_ata, vault_y_ata, token_program,
+            destination_wallet, destination_x_ata, destination_y_ata,
+            config, mint_x, mint_y, vault_x_ata,
+            vault_y_ata, token_program,
         ] = accounts else {
             return Err(ProgramError::InvalidAccountData);
         };
@@ -40,6 +43,15 @@ impl<'a> TryFrom<&'a mut [AccountView]> for DispenseAccounts<'a> {
         let y_mint = MintAccount::load(mint_y)?;
         MintAccount::check_initialized(y_mint)?;
         MintAccount::check_mint_authority(y_mint, config.address())?;
+        // Verifying the token accounts.
+        AssociatedTokenAccount::check(
+            destination_x_ata, destination_wallet,
+            mint_x, token_program
+        )?;
+        AssociatedTokenAccount::check(
+            destination_y_ata, destination_wallet,
+            mint_y, token_program
+        )?;
         AssociatedTokenAccount::check(
             vault_x_ata, config,
             mint_x, token_program
@@ -49,7 +61,8 @@ impl<'a> TryFrom<&'a mut [AccountView]> for DispenseAccounts<'a> {
             mint_y, token_program
         )?;
         Ok(Self {
-            destination_wallet, config, mint_x, mint_y,
+            destination_wallet, destination_x_ata,
+            destination_y_ata, config, mint_x, mint_y,
             vault_x_ata, vault_y_ata, token_program,
         })
     }
@@ -107,16 +120,25 @@ impl<'a> Dispense<'a> {
         ];
         let signer_seeds = [Signer::from(&binding)];
         // from, to, mint, authority, amount, decimals, signer_seeds
-        //TokenAccount::transfer_tokens(
-        //    config.vault_x_ata,
-        //    self.accounts.destination_wallet,
-        //    config.mint_x,
-        //    self.accounts.config,
-        //    self.instruction_data.amount,
-        //    config.x_decimal,
-        //    Some(&siner_seeds),
-        //)?;
-        log!("Dispensing tokens {} to trader wallet", self.instruction_data.amount);
+        TokenAccount::transfer_tokens(
+            self.accounts.vault_x_ata,
+            self.accounts.destination_x_ata,
+            self.accounts.mint_x,
+            self.accounts.config,
+            self.instruction_data.amount,
+            config.x_decimal,
+            Some(&signer_seeds),
+        )?;
+         TokenAccount::transfer_tokens(
+            self.accounts.vault_y_ata,
+            self.accounts.destination_y_ata,
+            self.accounts.mint_y,
+            self.accounts.config,
+            self.instruction_data.amount,
+            config.x_decimal,
+            Some(&signer_seeds),
+        )?;
+       log!("Dispensing tokens {} to trader wallet", self.instruction_data.amount);
         Ok(())
     }
 }

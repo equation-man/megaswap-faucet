@@ -13,6 +13,7 @@ use solana_system_interface::program::ID as SYSTEM_PROGRAM_ID;
 use spl_associated_token_account::ID as ASSOCIATED_TOKEN_PROGRAM_ID;
 use spl_associated_token_account::{
     get_associated_token_address,
+    instruction::create_associated_token_account_idempotent,
 };
 
 use crate::helpers::{
@@ -112,6 +113,7 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     let dispense_amount = 1_000_000u64;
     let mut ix_data = vec![1u8];
     ix_data.extend_from_slice(&dispense_amount.to_le_bytes());
+
     // accounts; config, destination_wallet
     let trader_wallet = Keypair::new();
     ctx.svm.airdrop(&trader_wallet.pubkey(), 5_000_000_000).unwrap();
@@ -119,12 +121,29 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
         &[b"config", &ctx.protocol_version.to_le_bytes()],
         &program_id
     );
-
     // Getting config data to extract utility addresses.
     let protocol_config = get_config_data(&ctx.svm, &config_pda);
 
+    // create destination_x_ata, and destination_y_ata
+    let trader_x_ata = get_associated_token_address(&trader_wallet.pubkey(), &protocol_config.mint_x);
+    let create_trader_x = create_associated_token_account_idempotent(
+        &trader_wallet.pubkey(), // payer
+        &trader_wallet.pubkey(), // authority
+        &protocol_config.mint_x,
+        &TOKEN_PROGRAM_ID,
+    );
+    let trader_y_ata = get_associated_token_address(&trader_wallet.pubkey(), &protocol_config.mint_y);
+    let create_trader_y = create_associated_token_account_idempotent(
+        &trader_wallet.pubkey(), // payer
+        &trader_wallet.pubkey(), // authority
+        &protocol_config.mint_y,
+        &TOKEN_PROGRAM_ID,
+    );
+
     let accounts = vec![
         AccountMeta::new(trader_wallet.pubkey(), true),
+        AccountMeta::new(trader_x_ata, false),
+        AccountMeta::new(trader_y_ata, false),
         AccountMeta::new(config_pda, false),
         AccountMeta::new(protocol_config.mint_x, false),
         AccountMeta::new(protocol_config.mint_y, false),
@@ -136,13 +155,13 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);
     let tx = Transaction::new(
         &[&trader_wallet],
-        Message::new(&[ix], Some(&trader_wallet.pubkey())),
+        Message::new(&[create_trader_x, create_trader_y, ix], Some(&trader_wallet.pubkey())),
         ctx.svm.latest_blockhash()
     );
 
     let tx_disp = ctx.svm.send_transaction(tx);
-    println!("Testing dispense transaction: {:#?}", tx_disp);
+    //println!("Testing dispense transaction: {:#?}", tx_disp);
 
-    //let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_wallet.pubkey());
-    //println!("The trader's wallet balance is {}", trader_wallet_bal);
+    let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_wallet.pubkey());
+    println!("The trader's wallet balance is {}", trader_wallet_bal);
 }
