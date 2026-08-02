@@ -162,6 +162,9 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     let tx_disp = ctx.svm.send_transaction(tx);
     //println!("Testing dispense transaction: {:#?}", tx_disp);
 
-    let trader_wallet_bal = get_token_balance(&ctx.svm, &trader_x_ata);
-    println!("The trader's wallet balance is {}", trader_wallet_bal);
+    let trader_wallet_x_bal = get_token_balance(&ctx.svm, &trader_x_ata);
+    let trader_wallet_y_bal = get_token_balance(&ctx.svm, &trader_y_ata);
+    assert_eq!(trader_wallet_x_bal, dispense_amount, "Check if the right amount was dispensed to x");
+    assert_eq!(trader_wallet_y_bal, dispense_amount, "Check if the right amount was dispensed to y");
+    //println!("The trader's wallet balance is {}", trader_wallet_bal);
 }

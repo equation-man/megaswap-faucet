@@ -119,7 +119,7 @@ impl<'a> Dispense<'a> {
             Seed::from(&config_bump_binding),
         ];
         let signer_seeds = [Signer::from(&binding)];
-        // from, to, mint, authority, amount, decimals, signer_seeds
+        // Equal amounts of tokens are dispensed to the atas.
         TokenAccount::transfer_tokens(
             self.accounts.vault_x_ata,
             self.accounts.destination_x_ata,
@@ -138,7 +138,9 @@ impl<'a> Dispense<'a> {
             config.x_decimal,
             Some(&signer_seeds),
         )?;
-       log!("Dispensing tokens {} to trader wallet", self.instruction_data.amount);
+        // Mint particular amount of supply determined by a formula
+        // to ensure the faucet is never completely drained and test traders
+        // always have constant supply of tokens to mint.
         Ok(())
     }
 }
