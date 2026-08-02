@@ -93,14 +93,14 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     let vault_x_bal = get_token_balance(&svm, &vault_x_ata);
     let vault_y_bal = get_token_balance(&svm, &vault_y_ata);
     // Getting config data.
-    let config_disp_bal = get_config_data(&svm, &config_pda);
+    let protocol_config = get_config_data(&svm, &config_pda);
 
     assert_eq!(vault_x_bal, protocol_seed_amount, "Vault x wallet: Expected {}, but got instead: {}", protocol_seed_amount, vault_x_bal);
     assert_eq!(vault_y_bal, protocol_seed_amount, "Vault y wallet: Expected {}, but got instead: {}", protocol_seed_amount, vault_y_bal);
     // Confirms the vaults are seeded appropriately with funds
     assert_eq!(vault_x_bal, vault_y_bal, "Expected: Vault x {} == Vault y {}", vault_x_bal, vault_y_bal);
     // Confirmed the PDA is appropriately initialized
-    assert_eq!(config_disp_bal, dispense_limit, "Expected dispense limit {}, got {}", dispense_limit, config_disp_bal);
+    assert_eq!(protocol_config.limit, dispense_limit, "Expected dispense limit {}, got {}", dispense_limit, protocol_config.limit);
 
     MegaSwapFaucetCtx {
         svm, initializer, protocol_version
@@ -120,9 +120,17 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
         &program_id
     );
 
+    // Getting config data to extract utility addresses.
+    let protocol_config = get_config_data(&svm, &config_pda);
+
     let accounts = vec![
         AccountMeta::new(trader_wallet.pubkey(), true),
         AccountMeta::new(config_pda, false),
+        AccountMeta::new(protocol_config.mint_x, false),
+        AccountMeta::new(protocol_config.mint_y, false),
+        AccountMeta::new(protocol_condig.vault_x_ata, false),
+        AccountMeta::new(protocol_config.vault_y_ata, false),
+        AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false);
     ];
 
     let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);

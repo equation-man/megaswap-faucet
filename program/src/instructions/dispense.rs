@@ -8,24 +8,50 @@ use pinocchio_log::log;
 use crate::config::Config;
 use crate::instructions::{
     account_checkers::*,
+    helpers::*,
 };
 
 pub struct DispenseAccounts<'a> {
     // Program's authority.
     pub destination_wallet: &'a AccountView,
     pub config: &'a AccountView,
+    pub mint_x: &'a AccountView,
+    pub mint_y: &'a AccountView,
+    pub vault_x_ata: &'a AccountView,
+    pub vault_y_ata: &'a AccountView,
+    pub token_program: &'a AccountView,
 }
 
 impl<'a> TryFrom<&'a mut [AccountView]> for DispenseAccounts<'a> {
     type Error = ProgramError;
     fn try_from(accounts: &'a mut [AccountView]) -> Result<Self, Self::Error> {
         let [
-            destination_wallet, config,
+            destination_wallet, config, mint_x, mint_y,
+            vault_x_ata, vault_y_ata, token_program,
         ] = accounts else {
             return Err(ProgramError::InvalidAccountData);
         };
         signer_check(destination_wallet)?;
-        Ok(Self { destination_wallet, config })
+        // Load and check structural layout for mint x
+        let x_mint = MintAccount::load(mint_x)?;
+        MintAccount::check_initialized(x_mint)?;
+        MintAccount::check_mint_authority(x_mint, config.address())?;
+        // Load and check structural layout for mint y
+        let y_mint = MintAccount::load(mint_y)?;
+        MintAccount::check_initialized(y_mint)?;
+        MintAccount::check_mint_authority(y_mint, config.address())?;
+        AssociatedTokenAccount::check(
+            vault_x_ata, config,
+            mint_x, token_program
+        )?;
+        AssociatedTokenAccount::check(
+            vault_y_ata, config,
+            mint_y, token_program
+        )?;
+        Ok(Self {
+            destination_wallet, config, mint_x, mint_y,
+            vault_x_ata, vault_y_ata, token_program,
+        })
     }
 }
 

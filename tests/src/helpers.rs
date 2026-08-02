@@ -56,12 +56,33 @@ pub fn get_token_balance(svm: &LiteSVM, token_account_pubkey: &Pubkey) -> u64 {
     u64::from_le_bytes(balance_bytes)
 }
 
-pub fn get_config_data(svm: &LiteSVM, config_account_pubkey: &Pubkey) -> u64 {
+#[derive(Clone, Debug)]
+pub struct ExtractedConfig {
+    pub limit: u64,
+    pub mint_x: Pubkey,
+    pub x_decimal: u8,
+    pub mint_y: Pubkey,
+    pub y_decimal: u8,
+    pub vault_x_ata: Pubkey,
+    pub vault_y_ata: Pubkey,
+}
+
+pub fn get_config_data(svm: &LiteSVM, config_account_pubkey: &Pubkey) -> ExtractedConfig {
     let account = svm.get_account(config_account_pubkey)
         .expect("Account Not Found");
-    let limit_bytes: [u8; 8] = account.data[0..8]
-        .try_into()
-        .expect("Failed to read dispense limit bytes from PDA");
+    let data = &account.data;
 
-    u64::from_le_bytes(limit_bytes)
+    let limit = u64::from_le_bytes(data[0..8].try_into().unwrap());
+    let mint_x = Pubkey::new_from_array(data[8..40].try_into().unwrap());
+    let x_decimal = data[40];
+    let mint_y = Pubkey::new_from_array(data[41..73].try_into().unwrap());
+    let y_decimal = data[73];
+    let vault_x_ata = Pubkey::new_from_array(data[74..106].try_into().unwrap());
+    let vault_y_ata = Pubkey::new_from_array(data[106..138].try_into().unwrap());
+
+    ExtractedConfig {
+        limit, mint_x, x_decimal,
+        mint_y, y_decimal, vault_x_ata,
+        vault_y_ata
+    }
 }

@@ -5,6 +5,7 @@ use pinocchio::{
     cpi::{Signer},
 };
 use pinocchio_system::instructions::CreateAccount;
+use pinocchio_token::state::{Account, AccountState, Mint};
 use pinocchio_token::instructions::{
     InitializeMint2, InitializeAccount3,
     MintTo, TransferChecked, Burn,
@@ -26,7 +27,9 @@ pub fn system_account_check(account: &AccountView) -> Result<(), ProgramError> {
 
 pub struct MintAccount;
 impl MintAccount {
-    pub fn check(account: &AccountView) -> Result<(), ProgramError> {
+    /// Check that this is structurally a Mint account.
+    #[inline(always)]
+    pub fn check_layout(account: &AccountView) -> Result<(), ProgramError> {
         if !account.owned_by(&pinocchio_token::ID) {
             return Err(ProgramError::IncorrectProgramId);
         }
@@ -34,6 +37,53 @@ impl MintAccount {
             return Err(ProgramError::InvalidAccountData);
         }
         Ok(())
+    }
+
+    /// Loads the Mint after validating its layout structurally.
+    #[inline(always)]
+    pub fn load<'a>(account: &'a AccountView) -> Result<&'a Mint, ProgramError> {
+        Self::check_layout(account)?;
+        Ok(unsafe {
+            &*(account.borrow_unchecked().as_ptr()
+                as *const Mint)
+        })
+    }
+
+    /// Check if initialized.
+    #[inline(always)]
+    pub fn check_initialized(mint: &Mint) -> ProgramResult {
+        if !mint.is_initialized() {
+            return Err(ProgramError::UninitializedAccount);
+        }
+        Ok(())
+    }
+
+    /// Check the decimals.
+    #[inline(always)]
+    pub fn check_decimals(mint: &Mint, expected: u8) -> ProgramResult {
+        if mint.decimals() != expected {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(())
+    }
+
+    /// Check mint authority.
+    #[inline(always)]
+    pub fn check_mint_authority(mint: &Mint, expected: &Address) -> ProgramResult {
+        match mint.mint_authority() {
+            Some(authority) if *authority == *expected => Ok(()),
+            _ => Err(ProgramError::IllegalOwner),
+        }
+    }
+
+    /// Check freeze authority.
+    #[inline(always)]
+    pub fn check_freeze_authority(mint: &Mint, expected: Option<&Address>) -> ProgramResult {
+        match (mint.freeze_authority(), expected) {
+            (None, None) => Ok(()),
+            (Some(actual), Some(expected)) if *actual == *expected => Ok(()),
+            _ => Err(ProgramError::IllegalOwner),
+        }
     }
 
     pub fn init(
@@ -66,7 +116,8 @@ impl MintAccount {
         decimals: u8, mint_authority: &Address,
         mint_signer: &[Signer], freeze_authority: Option<&Address>
     ) -> ProgramResult {
-        match Self::check(account) {
+        let mint = Self::load(account)?;
+        match Self::check_initialized(mint) {
             Ok(_) => Ok(()),
             Err(_) => Ok(Self::init(account, payer, decimals, mint_authority, mint_signer, freeze_authority)?),
         }
@@ -76,12 +127,70 @@ impl MintAccount {
 
 pub struct TokenAccount;
 impl TokenAccount {
-    pub fn check(account: &AccountView) -> Result<(), ProgramError> {
+    /// Checks that this is structurally a Token account.
+    #[inline(always)]
+    pub fn check_layout(account: &AccountView) -> Result<(), ProgramError> {
         if !account.owned_by(&pinocchio_token::ID) {
             return Err(ProgramError::IncorrectProgramId);
         }
         if account.data_len().ne(&pinocchio_token::state::Account::LEN) {
             return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(())
+    }
+
+    /// Returns a reference to the token account after validating the layout
+    #[inline(always)]
+    pub fn load<'a>(account: &'a AccountView) -> Result<&'a Account, ProgramError> {
+        Self::check_layout(account)?;
+
+        Ok(unsafe {
+            &*(account.borrow_unchecked().as_ptr()
+                as *const Account)
+        })
+    }
+
+    /// Owner checks
+    #[inline(always)]
+    pub fn check_owner(token: &Account, expected_owner: &Address) -> ProgramResult {
+        if token.owner() != expected_owner {
+            return Err(ProgramError::IllegalOwner);
+        }
+        Ok(())
+    }
+
+    /// Check mint.
+    #[inline(always)]
+    pub fn check_mint(token: &Account, expected_mint: &Address) -> ProgramResult {
+        if token.mint() != expected_mint {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(())
+    }
+
+    /// Check initialized.
+    #[inline(always)]
+    pub fn check_initialized(token: &Account) -> ProgramResult {
+        if token.state() != AccountState::Initialized {
+            return Err(ProgramError::UninitializedAccount);
+        }
+        Ok(())
+    }
+
+    /// Check not frozen.
+    #[inline(always)]
+    pub fn check_not_frozen(token: &Account) -> ProgramResult {
+        if token.state() == AccountState::Frozen {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        Ok(())
+    }
+
+    /// Check balance. Useful where protocol requires minimum token balance to proceed.
+    #[inline(always)]
+    pub fn check_balance(token: &Account, minimum: u64) -> ProgramResult {
+        if token.amount() < minimum {
+            return Err(ProgramError::InsufficientFunds);
         }
         Ok(())
     }
@@ -113,7 +222,8 @@ impl TokenAccount {
         account: &AccountView, mint: &AccountView,
         payer: &AccountView, owner: &Address
     ) -> ProgramResult {
-        match Self::check(account) {
+        let token_account = Self::load(account)?;
+        match Self::check_initialized(token_account) {
             Ok(_) => Ok(()),
             Err(_) => Ok(Self::init(account, mint, payer, owner)?),
         }

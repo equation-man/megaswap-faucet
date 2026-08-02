@@ -7,6 +7,7 @@ use pinocchio::{
 use pinocchio_system::instructions::CreateAccount;
 use pinocchio_associated_token_account::{
     instructions::{Create, CreateIdempotent},
+    ID as ATA_ID,
 };
 use pinocchio_log::log;
 use pinocchio::Resize;
@@ -26,12 +27,22 @@ impl AssociatedTokenAccount {
         mint: &AccountView, token_program: &AccountView
     ) -> ProgramResult {
         // Validating token account structure and owner.
-        TokenAccount::check(account)?;
-        // Validating the PDA address
-        //if Address::find_program_address(
-        //).0.ne(account.key()) {
-        //    return Err(ProgramError::InvalidAccountData);
-        //}
+        // We are obtaining the reference to the token account and performing layout checks.
+        let token = TokenAccount::load(account)?;
+        TokenAccount::check_owner(token, authority.address())?;
+        // Canonical ATA check
+        TokenAccount::check_mint(token, mint.address())?;
+        let (expected, _) = Address::find_program_address(
+            &[
+                authority.address().as_ref(),
+                token_program.address().as_ref(),
+                mint.address().as_ref()
+            ],
+            &ATA_ID,
+        );
+        if expected != *account.address() {
+            return Err(ProgramError::InvalidSeeds);
+        }
         Ok(())
     }
 
