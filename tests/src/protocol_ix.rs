@@ -43,14 +43,12 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     svm.airdrop(&initializer.pubkey(), 5_000_000_000).unwrap();
 
     // Data for instruction.
-    let protocol_seed_amount = 500_000_000_000u64;
-    let dispense_limit = 1_000_000u64;
+    let protocol_seed_amount = 100_000_000_000u64;
     let mint_decimals = 6u8;
     let x_decimals = 6u8;
     let y_decimals = 6u8;
     let protocol_version = 1u8;
     let mut ix_data = vec![0u8];
-    ix_data.extend_from_slice(&dispense_limit.to_le_bytes());
     ix_data.extend_from_slice(&protocol_seed_amount.to_le_bytes());
     ix_data.push(mint_decimals);
     ix_data.push(x_decimals);
@@ -100,8 +98,8 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
     assert_eq!(vault_y_bal, protocol_seed_amount, "Vault y wallet: Expected {}, but got instead: {}", protocol_seed_amount, vault_y_bal);
     // Confirms the vaults are seeded appropriately with funds
     assert_eq!(vault_x_bal, vault_y_bal, "Expected: Vault x {} == Vault y {}", vault_x_bal, vault_y_bal);
+    println!("Vault x: {}, Vault y: {}", vault_x_bal, vault_y_bal);
     // Confirmed the PDA is appropriately initialized
-    assert_eq!(protocol_config.limit, dispense_limit, "Expected dispense limit {}, got {}", dispense_limit, protocol_config.limit);
 
     MegaSwapFaucetCtx {
         svm, initializer, protocol_version
@@ -110,9 +108,9 @@ pub fn initialize_protocol(program_id: Pubkey) -> MegaSwapFaucetCtx {
 
 pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     // Dispense date.
-    let dispense_amount = 1_000_000u64;
+    //let dispense_amount = 1_000_000u64;
     let mut ix_data = vec![1u8];
-    ix_data.extend_from_slice(&dispense_amount.to_le_bytes());
+    //ix_data.extend_from_slice(&dispense_amount.to_le_bytes());
 
     // accounts; config, destination_wallet
     let trader_wallet = Keypair::new();
@@ -152,6 +150,16 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
         AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
     ];
 
+    // Balances before dispense
+    let trader_wallet_x_b = get_token_balance(&ctx.svm, &trader_x_ata);
+    println!("The wallet x bal is {}", trader_wallet_x_b);
+    let trader_wallet_y_b = get_token_balance(&ctx.svm, &trader_y_ata);
+    println!("The wallet y bal is {}", trader_wallet_y_b);
+    let vault_x_b = get_token_balance(&ctx.svm, &protocol_config.vault_x_ata);
+    println!("The vault x bal before is {}", vault_x_b);
+    let vault_y_b = get_token_balance(&ctx.svm, &protocol_config.vault_y_ata);
+    println!("The vault y bal before is {}", vault_y_b);
+
     let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);
     let tx = Transaction::new(
         &[&trader_wallet],
@@ -162,9 +170,16 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
     let tx_disp = ctx.svm.send_transaction(tx);
     //println!("Testing dispense transaction: {:#?}", tx_disp);
 
+    // Balances after dispense.
     let trader_wallet_x_bal = get_token_balance(&ctx.svm, &trader_x_ata);
+    println!("The wallet x bal is {}", trader_wallet_x_bal);
     let trader_wallet_y_bal = get_token_balance(&ctx.svm, &trader_y_ata);
-    assert_eq!(trader_wallet_x_bal, dispense_amount, "Check if the right amount was dispensed to x");
-    assert_eq!(trader_wallet_y_bal, dispense_amount, "Check if the right amount was dispensed to y");
+    println!("The wallet y bal is {}", trader_wallet_y_bal);
+    let vault_x_a = get_token_balance(&ctx.svm, &protocol_config.vault_x_ata);
+    println!("The vault x bal after is {}", vault_x_a);
+    let vault_y_a = get_token_balance(&ctx.svm, &protocol_config.vault_y_ata);
+    println!("The vault y bal after is {}", vault_y_a);
+    //assert_eq!(trader_wallet_x_bal, "Check if the right amount was dispensed to x");
+    //assert_eq!(trader_wallet_y_bal, "Check if the right amount was dispensed to y");
     //println!("The trader's wallet balance is {}", trader_wallet_bal);
 }

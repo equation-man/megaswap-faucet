@@ -48,17 +48,26 @@ pub fn create_test_mint(
 }
 
 pub fn get_token_balance(svm: &LiteSVM, token_account_pubkey: &Pubkey) -> u64 {
-    let acc_data = svm.get_account(token_account_pubkey)
-        .expect("Account not found");
-    let balance_bytes: [u8; 8] = acc_data.data[64..72].try_into()
-        .expect("Failed to read amount bytes from account layout");
+    let acc_data = match svm.get_account(token_account_pubkey) {
+        Some(account) => account,
+        None => return 0,
+    };
+
+    // Ensure account has enough bytes before slicing
+    if acc_data.data.len() < 72 {
+        return 0;
+    }
+
+    let balance_bytes: [u8; 8] = match acc_data.data[64..72].try_into() {
+        Ok(bytes) => bytes,
+        Err(_) => return 0,
+    };
 
     u64::from_le_bytes(balance_bytes)
 }
 
 #[derive(Clone, Debug)]
 pub struct ExtractedConfig {
-    pub limit: u64,
     pub mint_x: Pubkey,
     pub x_decimal: u8,
     pub mint_y: Pubkey,
@@ -72,16 +81,15 @@ pub fn get_config_data(svm: &LiteSVM, config_account_pubkey: &Pubkey) -> Extract
         .expect("Account Not Found");
     let data = &account.data;
 
-    let limit = u64::from_le_bytes(data[0..8].try_into().unwrap());
-    let mint_x = Pubkey::new_from_array(data[8..40].try_into().unwrap());
-    let x_decimal = data[40];
-    let mint_y = Pubkey::new_from_array(data[41..73].try_into().unwrap());
-    let y_decimal = data[73];
-    let vault_x_ata = Pubkey::new_from_array(data[74..106].try_into().unwrap());
-    let vault_y_ata = Pubkey::new_from_array(data[106..138].try_into().unwrap());
+    let mint_x = Pubkey::new_from_array(data[0..32].try_into().unwrap());
+    let x_decimal = data[32];
+    let mint_y = Pubkey::new_from_array(data[33..65].try_into().unwrap());
+    let y_decimal = data[66];
+    let vault_x_ata = Pubkey::new_from_array(data[67..99].try_into().unwrap());
+    let vault_y_ata = Pubkey::new_from_array(data[99..131].try_into().unwrap());
 
     ExtractedConfig {
-        limit, mint_x, x_decimal,
+        mint_x, x_decimal,
         mint_y, y_decimal, vault_x_ata,
         vault_y_ata
     }

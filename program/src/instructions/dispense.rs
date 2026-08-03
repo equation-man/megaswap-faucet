@@ -7,6 +7,9 @@ use pinocchio::{
 use pinocchio_log::log;
 use crate::config::Config;
 use crate::instructions::{
+    dispense_controller::{
+        SimpleRng, get_token_balance, calculate_faucet_payout,
+    },
     account_checkers::*,
     helpers::*,
 };
@@ -68,36 +71,16 @@ impl<'a> TryFrom<&'a mut [AccountView]> for DispenseAccounts<'a> {
     }
 }
 
-pub struct DispenseIxData {
-    amount: u64,
-}
-
-impl<'a> TryFrom<&'a [u8]> for DispenseIxData {
-    type Error = ProgramError;
-    fn try_from(data: &'a [u8]) -> Result<Self, Self::Error> {
-        if data.len() != core::mem::size_of::<DispenseIxData>() {
-            return Err(ProgramError::InvalidInstructionData);
-        }
-        let amount = u64::from_le_bytes(
-            data[0..8].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
-        );
-
-        Ok(Self { amount })
-    }
-}
-
 pub struct Dispense<'a> {
     pub accounts: DispenseAccounts<'a>,
-    pub instruction_data: DispenseIxData,
 }
 
 impl<'a> TryFrom<(&'a [u8], &'a mut [AccountView])> for Dispense<'a> {
     type Error = ProgramError;
     fn try_from((data, ix_accounts): (&'a [u8], &'a mut [AccountView])) -> Result<Self, Self::Error> {
         let accounts = DispenseAccounts::try_from(ix_accounts)?;
-        let instruction_data = DispenseIxData::try_from(data)?;
 
-        Ok(Self { accounts, instruction_data })
+        Ok(Self { accounts })
     }
 }
 
@@ -119,28 +102,102 @@ impl<'a> Dispense<'a> {
             Seed::from(&config_bump_binding),
         ];
         let signer_seeds = [Signer::from(&binding)];
-        // Equal amounts of tokens are dispensed to the atas.
-        TokenAccount::transfer_tokens(
-            self.accounts.vault_x_ata,
-            self.accounts.destination_x_ata,
-            self.accounts.mint_x,
-            self.accounts.config,
-            self.instruction_data.amount,
-            config.x_decimal,
-            Some(&signer_seeds),
-        )?;
-         TokenAccount::transfer_tokens(
-            self.accounts.vault_y_ata,
-            self.accounts.destination_y_ata,
-            self.accounts.mint_y,
-            self.accounts.config,
-            self.instruction_data.amount,
-            config.x_decimal,
-            Some(&signer_seeds),
-        )?;
-        // Mint particular amount of supply determined by a formula
-        // to ensure the faucet is never completely drained and test traders
-        // always have constant supply of tokens to mint.
+
+        // Obtaining the seed. This is not critical. We are just
+        // ensuring tokens are minted interchangeably.
+        let usr_accnt = self.accounts.destination_wallet.address().as_ref();
+        let seed = u32::from_le_bytes([
+            usr_accnt[0], usr_accnt[1],
+            usr_accnt[2], usr_accnt[3],
+        ]);
+        let mut rng = SimpleRng::new(seed);
+        // Chosing the token to dispense randomly
+        let token_choice = (rng.next_u32() as usize) % 2;
+        // Auto mint set up. It is okay to hardcode this in this context.
+        let critical_floor = 10_000_u64; 
+        if token_choice == 0 {
+            // Proportional Controller settings. It is okay to hardcode this in this context.
+            let faucet_balance = get_token_balance(self.accounts.vault_x_ata)?;
+            let dec_multiplier = 10_u64.checked_pow(config.x_decimal as u32).ok_or(ProgramError::InvalidInstructionData)?;
+            let target_floor = 100_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let base_payout = 50_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let min_payout = 20_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let max_payout = 70_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let k_scaled = 1 as u64;
+            let precision = config.x_decimal as u128;
+            // calculating the dispense amount.
+            match calculate_faucet_payout(
+                faucet_balance, target_floor, base_payout, k_scaled,
+                precision, min_payout, max_payout,
+            ) {
+                Some(dispense_amount) => {
+                    TokenAccount::transfer_tokens(
+                        self.accounts.vault_x_ata,
+                        self.accounts.destination_x_ata,
+                        self.accounts.mint_x,
+                        self.accounts.config,
+                        dispense_amount,
+                        config.x_decimal,
+                        Some(&signer_seeds),
+                    )?;
+                    // Fire the automint if the token falls below a particular threshold.
+                    let critical_bal = critical_floor.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+                    let mint_amount = target_floor.checked_sub(faucet_balance).ok_or(ProgramError::InvalidInstructionData)?;
+                    if faucet_balance < critical_bal {
+                        // Redeeming the dispensed x tokens.
+                        TokenAccount::mint_tokens(
+                            self.accounts.mint_x,
+                            self.accounts.vault_x_ata,
+                            self.accounts.config,
+                            mint_amount,
+                            &signer_seeds,
+                        )?;
+                    }
+                },
+                None => { return Ok(()) }
+            }
+        } else {
+            // Proportional Controller settings. It is okay to hardcode this in this context.
+            let faucet_balance = get_token_balance(self.accounts.vault_y_ata)?;
+            let dec_multiplier = 10_u64.checked_pow(config.y_decimal as u32).ok_or(ProgramError::InvalidInstructionData)?;
+            let target_floor = 100_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let base_payout = 50_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let min_payout = 20_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let max_payout = 70_000_u64.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+            let k_scaled = 1 as u64;
+            let precision = config.y_decimal as u128;
+            // calculating the dispense amount.
+            match calculate_faucet_payout(
+                faucet_balance, target_floor, base_payout, k_scaled,
+                precision, min_payout, max_payout,
+            ) {
+                Some(dispense_amount) => {
+                    TokenAccount::transfer_tokens(
+                        self.accounts.vault_y_ata,
+                        self.accounts.destination_y_ata,
+                        self.accounts.mint_y,
+                        self.accounts.config,
+                        dispense_amount,
+                        config.y_decimal,
+                        Some(&signer_seeds),
+                    )?;
+                    // Fire automint engine if faucet balance falls below critical level.
+                    let critical_bal = critical_floor.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
+                    let mint_amount = target_floor.checked_sub(faucet_balance).ok_or(ProgramError::InvalidInstructionData)?;
+                    if faucet_balance < critical_bal {
+                        // Redeeming the dispensed y tokens.
+                        TokenAccount::mint_tokens(
+                            self.accounts.mint_y,
+                            self.accounts.vault_y_ata,
+                            self.accounts.config,
+                            mint_amount,
+                            &signer_seeds,
+                        )?;
+                    }
+                },
+                None => { return Ok(()) }
+            }
+        }
         Ok(())
     }
 }

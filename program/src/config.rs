@@ -9,7 +9,6 @@ use crate::instructions::helpers::AccountData;
 
 #[repr(C)]
 pub struct Config {
-    pub limit: [u8; 8], // Token limit to dispense.
     pub mint_x: Address, // Mint address for token x.
     pub x_decimal: u8, // Token x decimals.
     pub mint_y: Address, // Mint address for token y.
@@ -113,8 +112,6 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn limit(&self) -> u64 { u64::from_le_bytes(self.limit) }
-    #[inline(always)]
     pub fn mint_x(&self) -> &Address { &self.mint_x }
     #[inline(always)]
     pub fn x_decimal(&self) -> u8 { self.x_decimal }
@@ -170,12 +167,6 @@ impl Config {
     }
 
     #[inline(always)]
-    pub fn set_limit(&mut self, limit: u64) -> Result<(), ProgramError> {
-        self.limit = limit.to_le_bytes();
-        Ok(())
-    }
-
-    #[inline(always)]
     pub fn set_mint_x(&mut self, mint_x: [u8; 32]) -> Result<(), ProgramError> {
         self.mint_x = mint_x.into();
         Ok(())
@@ -217,12 +208,11 @@ impl Config {
     #[inline(always)]
     pub fn set_inner(
         &mut self,
-        limit: u64, mint_x: [u8; 32], x_decimals: u8,
+        mint_x: [u8; 32], x_decimals: u8,
         mint_y: [u8; 32], y_decimals: u8,
         vault_x_ata: [u8; 32], vault_y_ata: [u8; 32],
         version: u8
     ) -> Result<(), ProgramError> {
-        self.set_limit(limit);
         self.set_mint_x(mint_x);
         self.set_x_decimals(x_decimals);
         self.set_mint_y(mint_y);

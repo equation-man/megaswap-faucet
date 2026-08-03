@@ -1,4 +1,5 @@
 use core::cmp::{max, min};
+use pinocchio::{AccountView, error::ProgramError};
 
 /// Proportional Controller(P-Controller) which control
 /// how the tokens are dispensed to users.
@@ -35,4 +36,42 @@ pub fn calculate_faucet_payout(
     ) as u64;
 
     Some(final_payout)
+}
+
+
+pub struct SimpleRng { state: u32 }
+impl SimpleRng {
+    /// Initializing the system. Must be non zero value. (0 breaks the system)
+    pub fn new(seed: u32) -> Self {
+        Self { state: if seed == 0 { 1 } else { seed } }
+    }
+
+    /// Generating the next pseudo random number.
+    pub fn next_u32(&mut self) -> u32 {
+        let mut x = self.state;
+        x ^= x << 13;
+        x ^= x >> 17;
+        x ^= x << 5;
+        self.state = x;
+        x
+    }
+}
+
+/// Reading the balance of a token.
+pub fn get_token_balance(token_account: &AccountView) -> Result<u64, ProgramError> {
+    // Safety Check: Verify account contains enough byte for an spl token
+    let data = token_account.try_borrow()?;
+    if data.len() < 165 {
+        return Err(ProgramError::InvalidAccountData);
+    }
+
+    // Splice that data: The 'amount' field starts at byte 64 and is 8 bytes long(u64)
+    let balance_bytes: &[u8; 8] = data[64..72]
+        .try_into()
+        .map_err(|_| ProgramError::InvalidAccountData)?;
+
+    // Converting the bytes to integer.
+    let balance = u64::from_le_bytes(*balance_bytes);
+
+    Ok(balance)
 }

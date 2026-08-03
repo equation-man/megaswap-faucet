@@ -51,7 +51,6 @@ impl<'a> TryFrom<&'a mut [AccountView]> for InitializeAccounts<'a> {
 // C layout and do not include padding.
 #[repr(C, packed)]
 pub struct InitializeInstructionData {
-    pub dispense_limit: u64,
     pub seed_amount: u64,
     pub mint_decimals: u8,
     pub x_decimals: u8,
@@ -65,21 +64,17 @@ impl<'a> TryFrom<&'a [u8]> for InitializeInstructionData {
         if data.len() != core::mem::size_of::<InitializeInstructionData>() {
             return Err(ProgramError::InvalidInstructionData);
         }
-        let dispense_limit = u64::from_le_bytes(
+        let seed_amount = u64::from_le_bytes(
             data[0..8].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
         );
-        let seed_amount = u64::from_le_bytes(
-            data[8..16].try_into().map_err(|_| ProgramError::InvalidInstructionData)?
-        );
-        let mint_decimals = data[16];
-        let x_decimals = data[17];
-        let y_decimals = data[18];
-        let protocol_version = data[19];
+        let mint_decimals = data[8];
+        let x_decimals = data[9];
+        let y_decimals = data[10];
+        let protocol_version = data[11];
 
         Ok(Self {
-            dispense_limit, seed_amount,
-            mint_decimals, x_decimals,
-            y_decimals, protocol_version,
+            seed_amount, mint_decimals,
+            x_decimals, y_decimals, protocol_version,
         })
     }
 }
@@ -198,7 +193,6 @@ impl<'a> Initialize<'a> {
         // Saving adding configuration to config PDA.
         let mut config = Config::load_mut(self.accounts.config)?;
         config.set_inner(
-            self.instruction_data.dispense_limit,
             expected_mint_x.to_bytes(),
             self.instruction_data.x_decimals,
             expected_mint_y.to_bytes(),
