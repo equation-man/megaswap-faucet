@@ -1,4 +1,4 @@
-# MegaSwap Dynamic Faucet  
+# MegaSwap Trader Simulation Token Issuer  
 This is megaswap-faucet, the token issuer for megaswap trading simulation environment. The protocol distributes trading tokens 
 to the simulation environment wallets dynamically.  
 It distributes larger amount of tokens when the pool is overflowing beyond a particular threshold 
