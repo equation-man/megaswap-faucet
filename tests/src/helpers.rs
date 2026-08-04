@@ -84,9 +84,9 @@ pub fn get_config_data(svm: &LiteSVM, config_account_pubkey: &Pubkey) -> Extract
     let mint_x = Pubkey::new_from_array(data[0..32].try_into().unwrap());
     let x_decimal = data[32];
     let mint_y = Pubkey::new_from_array(data[33..65].try_into().unwrap());
-    let y_decimal = data[66];
-    let vault_x_ata = Pubkey::new_from_array(data[67..99].try_into().unwrap());
-    let vault_y_ata = Pubkey::new_from_array(data[99..131].try_into().unwrap());
+    let y_decimal = data[65];
+    let vault_x_ata = Pubkey::new_from_array(data[66..98].try_into().unwrap());
+    let vault_y_ata = Pubkey::new_from_array(data[98..130].try_into().unwrap());
 
     ExtractedConfig {
         mint_x, x_decimal,

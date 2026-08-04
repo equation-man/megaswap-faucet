@@ -17,7 +17,9 @@ const PROGRAM_ID: Pubkey = Pubkey::new_from_array(megaswap_faucet::ID);
 #[test]
 fn test_init_protocol() {
     let mut ctx_init = initialize_protocol(PROGRAM_ID);
-    let _ = dispense_tokens(&mut ctx_init, PROGRAM_ID);
+    for _ in 0..50 {
+        let _ = dispense_tokens(&mut ctx_init, PROGRAM_ID);
+    }
 }
 
 // Testing the P-Controller.
