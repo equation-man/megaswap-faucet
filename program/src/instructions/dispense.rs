@@ -3,6 +3,7 @@ use solana_address;
 use pinocchio::{
     AccountView, Address, ProgramResult,
     error::ProgramError, cpi::{Signer, Seed},
+    sysvars::{clock::Clock, Sysvar},
 };
 use pinocchio_log::log;
 use crate::config::Config;
@@ -106,10 +107,13 @@ impl<'a> Dispense<'a> {
         // Obtaining the seed. This is not critical. We are just
         // ensuring tokens are minted interchangeably.
         let usr_accnt = self.accounts.destination_wallet.address().as_ref();
-        let seed = u32::from_le_bytes([
+        let clock = Clock::get()?;
+        let timestamp = clock.unix_timestamp as u32;
+        let seed_bytes = u32::from_le_bytes([
             usr_accnt[0], usr_accnt[1],
             usr_accnt[2], usr_accnt[3],
         ]);
+        let seed = seed_bytes ^ timestamp;
         let mut rng = SimpleRng::new(seed);
         // Chosing the token to dispense randomly
         let token_choice = (rng.next_u32() as usize) % 2;
@@ -131,6 +135,7 @@ impl<'a> Dispense<'a> {
                 precision, min_payout, max_payout,
             ) {
                 Some(dispense_amount) => {
+                    let mint_state = if faucet_balance > dispense_amount { true } else { false };
                     TokenAccount::transfer_tokens(
                         self.accounts.vault_x_ata,
                         self.accounts.destination_x_ata,
@@ -140,10 +145,12 @@ impl<'a> Dispense<'a> {
                         config.x_decimal,
                         Some(&signer_seeds),
                     )?;
+                    let f_after_bal = get_token_balance(self.accounts.vault_x_ata)?;
+                    // Check the faucet balance after withdrawal.
                     // Fire the automint if the token falls below a particular threshold.
                     let critical_bal = critical_floor.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
-                    let mint_amount = target_floor.checked_sub(faucet_balance).ok_or(ProgramError::InvalidInstructionData)?;
-                    if faucet_balance < critical_bal {
+                    let mint_amount = target_floor.checked_sub(f_after_bal).ok_or(ProgramError::InvalidInstructionData)?;
+                    if f_after_bal < critical_bal {
                         // Redeeming the dispensed x tokens.
                         TokenAccount::mint_tokens(
                             self.accounts.mint_x,
@@ -181,10 +188,11 @@ impl<'a> Dispense<'a> {
                         config.y_decimal,
                         Some(&signer_seeds),
                     )?;
+                    let f_after_bal = get_token_balance(self.accounts.vault_y_ata)?;
                     // Fire automint engine if faucet balance falls below critical level.
                     let critical_bal = critical_floor.checked_mul(dec_multiplier).ok_or(ProgramError::InvalidInstructionData)?;
-                    let mint_amount = target_floor.checked_sub(faucet_balance).ok_or(ProgramError::InvalidInstructionData)?;
-                    if faucet_balance < critical_bal {
+                    let mint_amount = target_floor.checked_sub(f_after_bal).ok_or(ProgramError::InvalidInstructionData)?;
+                    if f_after_bal < critical_bal {
                         // Redeeming the dispensed y tokens.
                         TokenAccount::mint_tokens(
                             self.accounts.mint_y,

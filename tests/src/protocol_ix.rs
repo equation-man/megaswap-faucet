@@ -152,13 +152,15 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
 
     // Balances before dispense
     let trader_wallet_x_b = get_token_balance(&ctx.svm, &trader_x_ata);
-    println!("The wallet x bal is {}", trader_wallet_x_b);
+    println!("===============================================================");
+    println!("Trader wallet balance for token x is: {}", trader_wallet_x_b);
     let trader_wallet_y_b = get_token_balance(&ctx.svm, &trader_y_ata);
-    println!("The wallet y bal is {}", trader_wallet_y_b);
+    println!("Trader wallet balance for token y is: {}", trader_wallet_y_b);
     let vault_x_b = get_token_balance(&ctx.svm, &protocol_config.vault_x_ata);
-    println!("The vault x bal before is {}", vault_x_b);
+    println!("Token issuer pool balance for token x is: {}", vault_x_b);
     let vault_y_b = get_token_balance(&ctx.svm, &protocol_config.vault_y_ata);
-    println!("The vault y bal before is {}", vault_y_b);
+    println!("Token issuer pool balance for token y is: {}", vault_y_b);
+    println!("---------------------------------------------------------------");
 
     let ix = Instruction::new_with_bytes(program_id, &ix_data, accounts);
     let tx = Transaction::new(
@@ -172,13 +174,14 @@ pub fn dispense_tokens(ctx: &mut MegaSwapFaucetCtx, program_id: Pubkey) {
 
     // Balances after dispense.
     let trader_wallet_x_bal = get_token_balance(&ctx.svm, &trader_x_ata);
-    println!("The wallet x bal is {}", trader_wallet_x_bal);
+    println!("Trader wallet balance for token x after issuance: {}", trader_wallet_x_bal);
     let trader_wallet_y_bal = get_token_balance(&ctx.svm, &trader_y_ata);
-    println!("The wallet y bal is {}", trader_wallet_y_bal);
+    println!("Trader wallet balance for token y after issuance: {}", trader_wallet_y_bal);
     let vault_x_a = get_token_balance(&ctx.svm, &protocol_config.vault_x_ata);
-    println!("The vault x bal after is {}", vault_x_a);
+    println!("Token issuer pool balance for token x is after issuance: {}", vault_x_a);
     let vault_y_a = get_token_balance(&ctx.svm, &protocol_config.vault_y_ata);
-    println!("The vault y bal after is {}", vault_y_a);
+    println!("Token issuer pool balance for token y is after issuance: {}", vault_y_a);
+    println!("===============================================================");
     //assert_eq!(trader_wallet_x_bal, "Check if the right amount was dispensed to x");
     //assert_eq!(trader_wallet_y_bal, "Check if the right amount was dispensed to y");
     //println!("The trader's wallet balance is {}", trader_wallet_bal);
